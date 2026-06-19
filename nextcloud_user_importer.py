@@ -3,7 +3,6 @@ import os
 import sys
 import csv
 import html
-import json
 import random
 import string
 import requests
@@ -41,6 +40,9 @@ def update_user(config, user_data):
     }
     responses = []
     for key in data:
+        if (key == 'password' and not config.password ):
+            print("Password not updated")
+            continue
         print("Updating:" + key)
         response =requests.put(url, headers={'OCS-APIRequest': 'true', 'Accept': 'application/json'}, data={'key' : key, 'value' : data[key]}, verify=config.ssl_verify)
         print(f"User update {user_data['username']}: {response.status_code} - {response.text}")
@@ -116,9 +118,19 @@ def user_add_groups(config, username, groups):
         response = requests.post(url, headers={'OCS-APIRequest': 'true', 'Accept': 'application/json'}, data={'groupid': group }, verify=config.ssl_verify)
         print(f"  User add group {group} {username}: {response.status_code} - {response.text}")
         responses.append(response)
-
-
     return responses
+
+def get_users(config):
+    config.api_url = '/ocs/v1.php/cloud/users/details'
+    url = f"{config.protocol}://{config.admin_name}:{config.admin_pass}@{config.nc_url}{config.api_url}"
+    response = requests.get(url, headers={'OCS-APIRequest': 'true', 'Accept': 'application/json'}, verify=config.ssl_verify)
+    writer = csv.writer(sys.stdout, lineterminator=os.linesep)
+    writer.writerow(['username', 'display_name', 'password', 'email', 'groups', 'quota'])
+
+    if response.json()['ocs']['data'] and response.json()['ocs']['data']['users']:
+        users = response.json()['ocs']['data']['users']
+        writer.writerows([[u, users[u]['displayname'], '*CHANGEME*', users[u]['email'], ",".join(users[u]['groups']), users[u]['quota']['total']] for u in users])
+
 
 
 def main(args):
@@ -176,7 +188,8 @@ def main(args):
                 print(f"Group {group['groupid']}: {response.status_code} - {response.text}")
         else:
             print("\nDry run completed. No users were created.")
-
+    if args.dump_users_csv:
+        get_users(args)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nextcloud User Importer")
@@ -188,12 +201,14 @@ if __name__ == "__main__":
     options = parser.add_mutually_exclusive_group(required=True)
     options.add_argument("--users-csv-file", help="Path to CSV file")
     options.add_argument("--groups-csv-file", help="Path to CSV file")
+    options.add_argument("--dump-users-csv", action="store_true", help="Dump current users")
     parser.add_argument("--csv-delimiter", default=",", help="CSV delimiter")
     parser.add_argument("--csv-delimiter-groups", default=";", help="CSV delimiter for groups")
     parser.add_argument("--generate-password", action="store_true", help="Generate random passwords")
     parser.add_argument("--no-ssl-verify", action="store_false", dest="ssl_verify", help="Disable SSL verification")
     parser.add_argument("--language", default="en", help="User language")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without creating users")
+    parser.add_argument("--password", action="store_true", help="Update password processing when updating user")
 
     args = parser.parse_args()
     
