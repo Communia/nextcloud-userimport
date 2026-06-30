@@ -155,7 +155,7 @@ on the server, right now there's no api endpoint to create mail app accounts.
 
 ```
 usage: nextcloud_user_importer.py mail-app [-h] --mail-csv-file MAIL_CSV_FILE [--generate-password] [--csv-delimiter CSV_DELIMITER] --imap-host IMAP_HOST --imap-port IMAP_PORT --imap-ssl-mode {ssl,tls,none} --smtp-host SMTP_HOST --smtp-port SMTP_PORT --smtp-ssl-mode
-                                           {ssl,tls,none} [--auth-method {password,xoauth2}]
+                                           {ssl,tls,none} [--auth-method {password,xoauth2}] [--occ-out] [--ldiff-out] [--ldiff-template LDIFF_TEMPLATE]
 
 options:
   -h, --help            show this help message and exit
@@ -171,6 +171,10 @@ options:
   --smtp-port SMTP_PORT
   --smtp-ssl-mode {ssl,tls,none}
   --auth-method {password,xoauth2}
+  --occ-out             Output the occ command for each user
+  --ldiff-out           Output the ldiff out for each user (Needs --ldiff-template argument)
+  --ldiff-template LDIFF_TEMPLATE
+                        Path to the file to be used as ldiff template (Needs --ldiff-out flag)
 
 ```
 
@@ -186,10 +190,27 @@ bob,Robert Wang,,bob@example.com,devs,5 GB
 run suited to your needs
 
 ```
-$ python nextcloud_user_importer.py mail-app --mail-csv-file users.csv --imap-host mails.example.org --imap-port 993  --imap-ssl-mode ssl --smtp-host mails.example.org --smtp-port 465 --smtp-ssl-mode ssl 
-occ mail:account:create bob bob bob@example.com mails.example.org 993 ssl bob@example.com  mails.example.org 465 ssl bob@example.com  password
+$ python nextcloud_user_importer.py mail-app --mail-csv-file users.csv --imap-host mails.example.com --imap-port 993  --imap-ssl-mode ssl --smtp-host mails.example.com --smtp-port 465 --smtp-ssl-mode ssl --occ-out
+occ mail:account:create bob bob bob@example.com mails.example.com 993 ssl bob@example.com  mails.example.com 465 ssl bob@example.com  password
 ```
 
 Copy the output (`occ mail:account:create ...` ). Login to your server, go to nextcloud directory. and paste the
 the commands.
 
+Optionally it could also output the ldiff file for openldap needed scenarios. Then the options
+`--ldiff-out` together with `--ldiff-template {file.tpl}` must be added. You can take the ldiff_template.tpl
+as starting example. The template may use these variables: 
+
+```
+${username}
+${email}
+${imap_host}
+${imap_port}
+${imap_ssl_mode} :  ssl,tls or none.
+${password} : raw password.
+${smtp_host}
+${smtp_port}
+${smtp_ssl_mode} : ssl,tls or none.
+${auth_method} : auth method used by nextcloud mail app.
+${password_hash} : password hash
+```
