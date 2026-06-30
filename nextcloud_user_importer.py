@@ -8,6 +8,9 @@ import string
 import requests
 import argparse
 from tabulate import tabulate
+from string import Template
+import base64
+import hashlib
 
 def generate_password():
     return ''.join(random.choices(string.digits, k=10))
@@ -131,7 +134,13 @@ def get_users(config):
         users = response.json()['ocs']['data']['users']
         writer.writerows([[u, users[u]['displayname'], '*CHANGEME*', users[u]['email'], ",".join(users[u]['groups']), users[u]['quota']['total']] for u in users])
 
-
+def generate_ssha(password: str) -> str:
+    salt = os.urandom(4)
+    sha1 = hashlib.sha1(password.encode("utf-8"))
+    sha1.update(salt)
+    digest = sha1.digest()
+    encoded = base64.b64encode(digest + salt).decode("utf-8")
+    return f"{{SSHA}}{encoded}=="
 
 def main(args):
     if hasattr(args, 'users_csv_file'):
@@ -201,6 +210,9 @@ def main(args):
                     'password': generate_password() if args.generate_password else html.escape(row['password']),
                     'email': html.escape(row['email'])
                 }
+                users.append(user)
+        if (args.occ_out):
+            for user in users:
                 print('occ mail:account:create {user_id} {name} {email} {imap_host} {imap_port} {imap_ssl_mode} {imap_user} {imap_password} {smtp_host} {smtp_port} {smtp_ssl_mode} {smtp_user} {smtp_password} {auth_method}'.format(
                     user_id = user['username'],
                     name = user['username'],
@@ -217,6 +229,27 @@ def main(args):
                     smtp_password = user['password'],
                     auth_method = args.auth_method
                 ))
+        if (args.ldiff_out and args.ldiff_template):
+            with open(args.ldiff_template, 'r') as file:
+                template_string = file.read()
+            template = Template(template_string)
+            for user in users:
+                password_hash = generate_ssha(user['password'])
+                result = template.substitute(
+                    username = user['username'],
+                    email = user['email'],
+                    imap_host = args.imap_host,
+                    imap_port = args.imap_port,
+                    imap_ssl_mode = args.imap_ssl_mode,
+                    password = user['password'],
+                    smtp_host = args.smtp_host,
+                    smtp_port = args.smtp_port,
+                    smtp_ssl_mode = args.smtp_ssl_mode,
+                    auth_method = args.auth_method,
+                    password_hash = password_hash
+                )
+
+                print(result)
 
  
 
@@ -234,6 +267,10 @@ if __name__ == "__main__":
     mail_app_parser.add_argument('--smtp-port', required=True)
     mail_app_parser.add_argument('--smtp-ssl-mode', required=True, choices=["ssl", "tls", "none"])
     mail_app_parser.add_argument('--auth-method', default="password", choices=["password", "xoauth2"])
+    mail_app_parser.add_argument('--occ-out', action='store_true', help="Output the occ command for each user")
+    mail_app_parser.add_argument('--ldiff-out', action='store_true', help="Output the ldiff out for each user (Needs --ldiff-template argument)")
+    mail_app_parser.add_argument('--ldiff-template', help="Path to the file to be used as ldiff template (Needs --ldiff-out flag)")
+
 
     users_parser = subparsers.add_parser('users')
     users_parser.add_argument("--users-csv-file", help="Path to CSV file")

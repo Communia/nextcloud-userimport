@@ -1,0 +1,29 @@
+dn: mail=${email},vd=${imap_host},o=hosting,dc=example,dc=tld
+accountActive: TRUE 
+amavisSpamTagLevel: 3.0
+amavisSpamTag2Level: 5.5
+amavisSpamKillLevel: 6.0
+amavisBypassVirusChecks: TRUE
+amavisBypassSpamChecks: FALSE
+forwardActive: FALSE
+vacationActive: FALSE
+smtpAuth: TRUE
+delete: FALSE
+mailAutoreply: ${email}.autoreply
+otherTransport: gnarwl:${imap_host}
+uid: ${email}
+mailbox: ${imap_host}/${email}
+vdHome: /home/vmail/domains
+quota: 1073741824
+mail: ${email}
+userPassword: ${password_hash}
+sn: Mail
+givenName: ${username}
+cn: ${username}
+objectClass: top
+objectClass: VirtualMailAccount
+objectClass: Vacation
+objectClass: VirtualForward
+objectClass: amavisAccount
+
+
