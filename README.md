@@ -69,10 +69,10 @@ with the values of the row, with the exception of the password value.
 If you want to update also the password add the argument `--password`.
 
 
-You can obtain the current users list with the argument `--dump-users-csv`,
+You can obtain the current users list with the command `dump`,
 this may be useful as a template. (more information on dump section below).
 
-`python3 nextcloud_user_importer.py dump --nc-url your-nextcloud-url.com --admin-name admin --admin-pass password --dump-users-csv`
+`python3 nextcloud_user_importer.py dump --nc-url your-nextcloud-url.com --admin-name admin --admin-pass password`
 
 
 
