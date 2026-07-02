@@ -184,14 +184,14 @@ Based on the same csv structure as users command, an example could be this users
 
 ```
 username,display_name,password,email,groups,quota
-bob,Robert Wang,,bob@example.com,devs,5 GB
+bob,Robert Wang,mypass,bob@example.com,devs,5 GB
 ```
 
 run suited to your needs
 
 ```
 $ python nextcloud_user_importer.py mail-app --mail-csv-file users.csv --imap-host mails.example.com --imap-port 993  --imap-ssl-mode ssl --smtp-host mails.example.com --smtp-port 465 --smtp-ssl-mode ssl --occ-out
-occ mail:account:create bob bob bob@example.com mails.example.com 993 ssl bob@example.com  mails.example.com 465 ssl bob@example.com  password
+occ mail:account:create bob bob bob@example.com mails.example.com 993 ssl bob@example.com mypass mails.example.com 465 ssl bob@example.com mypass password
 ```
 
 Copy the output (`occ mail:account:create ...` ). Login to your server, go to nextcloud directory. and paste the
