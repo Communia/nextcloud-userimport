@@ -237,6 +237,7 @@ def main(args):
                 password_hash = generate_ssha(user['password'])
                 result = template.substitute(
                     username = user['username'],
+                    display_name = user['display_name'],
                     email = user['email'],
                     imap_host = args.imap_host,
                     imap_port = args.imap_port,

@@ -203,6 +203,7 @@ as starting example. The template may use these variables:
 
 ```
 ${username}
+${display_name}
 ${email}
 ${imap_host}
 ${imap_port}

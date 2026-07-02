@@ -18,7 +18,7 @@ quota: 1073741824
 mail: ${email}
 userPassword: ${password_hash}
 sn: Mail
-givenName: ${username}
+givenName: ${display_name}
 cn: ${username}
 objectClass: top
 objectClass: VirtualMailAccount
