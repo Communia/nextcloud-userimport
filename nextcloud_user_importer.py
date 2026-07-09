@@ -197,7 +197,7 @@ def main(args):
                 print(f"Group {group['groupid']}: {response.status_code} - {response.text}")
         else:
             print("\nDry run completed. No users were created.")
-    if hasattr(args, 'dump_users_csv'):
+    if (hasattr(args, 'command') and args.command == 'dump'):        
         get_users(args)
     if hasattr(args, 'mail_csv_file'):
         users = []
@@ -256,7 +256,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nextcloud User Importer")
-    subparsers = parser.add_subparsers(title='subcommands', description='valid subcommands', help='additional subcommands')
+    subparsers = parser.add_subparsers(title='subcommands', dest='command', description='valid subcommands', help='additional subcommands')
     mail_app_parser = subparsers.add_parser('mail-app')
     mail_app_parser.add_argument('--mail-csv-file', required=True, help="Path to CSV file as in users csv to out occ script to be run in server")
     mail_app_parser.add_argument("--generate-password", action="store_true", help="Generate random passwords")
