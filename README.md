@@ -215,3 +215,62 @@ ${smtp_ssl_mode} : ssl,tls or none.
 ${auth_method} : auth method used by nextcloud mail app.
 ${password_hash} : password hash
 ```
+
+
+# Troubleshooting
+
+
+## Check hashes
+
+You can easily check hashes with this code (needs python passlib libs), changing existing_pw and existing_hash
+strings with known pw and its valid hash:
+
+```python
+ #!/usr/bin/env python3
+from passlib.hash import ldap_salted_sha1
+import base64
+import hashlib
+import os
+
+existing_pw = "EXISTING PW";
+existing_hash = "Existing hash"; // like {SSHA}XXXXXXX==
+
+def generate_ssha(password: str) -> str:
+   salt = os.urandom(4)
+   sha1 = hashlib.sha1(password.encode("utf-8"))
+   sha1.update(salt)
+   digest = sha1.digest()
+   encoded = base64.b64encode(digest + salt).decode("utf-8")
+   return f"{{SSHA}}{encoded}=="
+
+# Hash a password
+hashed_passlib_password = ldap_salted_sha1.hash("mypassword")
+hashed_hashlib_password = generate_ssha("mypassword")
+
+# Verify a password against the hash
+passlib_is_valid = ldap_salted_sha1.verify("mypassword", hashed_passlib_password)
+hashlib_is_valid = ldap_salted_sha1.verify("mypassword", hashed_hashlib_password)
+
+
+hashed_hashlib_existing_password = generate_ssha(existing_pw)
+existing_pw_is_valid = ldap_salted_sha1.verify(existing_pw, hashed_hashlib_existing_password)
+
+print(passlib_is_valid)
+print(hashlib_is_valid)
+print(existing_pw_is_valid)
+
+prod_is_valid = ldap_salted_sha1.verify(existing_pw, existing_hash)
+print(prod_is_valid)
+fail_prod_is_valid = ldap_salted_sha1.verify("Must Fail", existing_hash)
+print(fail_prod_is_valid)
+```
+
+will output:
+
+```
+True
+True
+True
+True
+False
+```
