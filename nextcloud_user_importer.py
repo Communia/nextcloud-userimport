@@ -273,7 +273,6 @@ def main(args):
                     auth_method = args.auth_method,
                     password_hash = password_hash
                 )
-                print(result)
                 json_users.append(json.loads(result))
             print(json.dumps({'users': json_users}, separators=(',', ':')))
 
