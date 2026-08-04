@@ -3,6 +3,7 @@ import os
 import sys
 import csv
 import html
+import json
 import random
 import string
 import requests
@@ -251,6 +252,31 @@ def main(args):
                 )
 
                 print(result)
+        if (args.json_out and args.json_template):
+            json_users = []
+            with open(args.json_template, 'r') as file:
+                template_string = file.read()
+            template = Template(template_string)
+            for user in users:
+                password_hash = generate_ssha(user['password'])
+                result = template.substitute(
+                    username = user['username'],
+                    display_name = user['display_name'],
+                    email = user['email'],
+                    imap_host = args.imap_host,
+                    imap_port = args.imap_port,
+                    imap_ssl_mode = args.imap_ssl_mode,
+                    password = user['password'],
+                    smtp_host = args.smtp_host,
+                    smtp_port = args.smtp_port,
+                    smtp_ssl_mode = args.smtp_ssl_mode,
+                    auth_method = args.auth_method,
+                    password_hash = password_hash
+                )
+                print(result)
+                json_users.append(json.loads(result))
+            print(json.dumps({'users': json_users}, separators=(',', ':')))
+
 
  
 
@@ -271,6 +297,9 @@ if __name__ == "__main__":
     mail_app_parser.add_argument('--occ-out', action='store_true', help="Output the occ command for each user")
     mail_app_parser.add_argument('--ldiff-out', action='store_true', help="Output the ldiff out for each user (Needs --ldiff-template argument)")
     mail_app_parser.add_argument('--ldiff-template', help="Path to the file to be used as ldiff template (Needs --ldiff-out flag)")
+    mail_app_parser.add_argument('--json-out', action='store_true', help="Output the json out for each user (Needs --json-template argument)")
+    mail_app_parser.add_argument('--json-template', help="Path to the file to be used as json template (Needs --json-out flag)")
+
 
 
     users_parser = subparsers.add_parser('users')

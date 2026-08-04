@@ -216,6 +216,35 @@ ${auth_method} : auth method used by nextcloud mail app.
 ${password_hash} : password hash
 ```
 
+Optionally it could also output the json file for custom needed scenarios. Then the options
+`--json-out` together with `--json-template {file.tpl}` must be added. You can take the json_template.tpl
+as starting example. The template will be applied to each user and will be wrapped with users list:
+
+```
+{
+    "users" : [
+        each user formatted with json_template
+    ]
+}
+```
+
+The template may use these variables: 
+
+```
+${username}
+${display_name}
+${email}
+${imap_host}
+${imap_port}
+${imap_ssl_mode} :  ssl,tls or none.
+${password} : raw password.
+${smtp_host}
+${smtp_port}
+${smtp_ssl_mode} : ssl,tls or none.
+${auth_method} : auth method used by nextcloud mail app.
+${password_hash} : password hash
+```
+
 
 # Troubleshooting
 
