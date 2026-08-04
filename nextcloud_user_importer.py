@@ -141,7 +141,7 @@ def generate_ssha(password: str) -> str:
     sha1.update(salt)
     digest = sha1.digest()
     encoded = base64.b64encode(digest + salt).decode("utf-8")
-    return f"{{SSHA}}{encoded}=="
+    return f"{{SSHA}}{encoded}"
 
 def main(args):
     if hasattr(args, 'users_csv_file'):
