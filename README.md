@@ -226,14 +226,18 @@ You can easily check hashes with this code (needs python passlib libs), changing
 strings with known pw and its valid hash:
 
 ```python
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 from passlib.hash import ldap_salted_sha1
 import base64
 import hashlib
 import os
+from ldap3 import HASHED_SALTED_SHA
+from ldap3.utils.hashed import hashed
 
 existing_pw = "EXISTING PW";
 existing_hash = "Existing hash"; // like {SSHA}XXXXXXX==
+
+SSHA_TAG = '{SSHA}'
 
 def generate_ssha(password: str) -> str:
    salt = os.urandom(4)
@@ -241,7 +245,27 @@ def generate_ssha(password: str) -> str:
    sha1.update(salt)
    digest = sha1.digest()
    encoded = base64.b64encode(digest + salt).decode("utf-8")
-   return f"{{SSHA}}{encoded}=="
+   return f"{SSHA_TAG}{encoded}"
+
+def verify_ssha(stored_hash, password, encoding='utf-8'):
+    """
+    Verify a password against an ldap3 '{SSHA}...' hash.
+    """
+    if isinstance(password, str):
+        password = password.encode(encoding)
+
+    if not stored_hash.upper().startswith('{SSHA}'):
+        raise ValueError('Not an SSHA hash')
+
+    # strip the '{SSHA}' prefix (case-insensitive), then decode base64
+    b64_payload = stored_hash[len('{SSHA}'):]
+    raw = base64.b64decode(b64_payload)
+
+    # SHA1 digest is always 20 bytes; everything after is the salt
+    digest, salt = raw[:20], raw[20:]
+
+    computed = hashlib.sha1(password + salt).digest()
+    return computed == digest
 
 # Hash a password
 hashed_passlib_password = ldap_salted_sha1.hash("mypassword")
@@ -251,26 +275,45 @@ hashed_hashlib_password = generate_ssha("mypassword")
 passlib_is_valid = ldap_salted_sha1.verify("mypassword", hashed_passlib_password)
 hashlib_is_valid = ldap_salted_sha1.verify("mypassword", hashed_hashlib_password)
 
+hashed_ldap3_password = hashed(HASHED_SALTED_SHA, "mypassword")
+ldap3_is_valid = ldap_salted_sha1.verify("mypassword", '{SSHA}' +hashed_ldap3_password[6:])
+ldap3_is_valid_hashlib = verify_ssha(hashed_ldap3_password, 'mypassword') 
 
 hashed_hashlib_existing_password = generate_ssha(existing_pw)
 existing_pw_is_valid = ldap_salted_sha1.verify(existing_pw, hashed_hashlib_existing_password)
 
+print("checking hashed_passlib_password:" + hashed_passlib_password)
 print(passlib_is_valid)
+print("checking hashed_hashlib_password:" + hashed_hashlib_password)
 print(hashlib_is_valid)
+print("checking hashed_ldap3_password" + '{SSHA}' +hashed_ldap3_password[6:])
+print(ldap3_is_valid)
+print("checking hashed_ldap3_password with hashlib verify_ssha method" + hashed_ldap3_password)
+print(ldap3_is_valid_hashlib)
+print("checking usual must assert password:" + hashed_hashlib_existing_password)
 print(existing_pw_is_valid)
 
+print("checking production password and hash:")
 prod_is_valid = ldap_salted_sha1.verify(existing_pw, existing_hash)
 print(prod_is_valid)
+
 fail_prod_is_valid = ldap_salted_sha1.verify("Must Fail", existing_hash)
+print("checking must fail password and hash:")
 print(fail_prod_is_valid)
-```
 
-will output:
-
-```
-True
-True
-True
-True
-False
+#will output:
+#checking hashed_passlib_password:{SSHA}whatever
+#True
+#checking hashed_hashlib_password:{SSHA}whatever
+#True
+#checking hashed_ldap3_password{SSHA}whatever
+#True
+#checking hashed_ldap3_password with hashlib ssha_verify method {ssha}whatever
+#True
+#checking usual must assert password:{SSHA}whatever
+#True
+#checking production password and hash:
+#True
+#checking must fail password and hash:
+#False
 ```
